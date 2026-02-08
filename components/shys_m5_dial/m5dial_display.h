@@ -1,8 +1,19 @@
 #pragma once
 #include "M5Dial.h"
-#include "esphome.h"
+#include "esphome/core/log.h"
+#include "esphome/core/hal.h"
 #include "default_font_16px.h"
 #include "screensaver.h"
+#include <M5GFX.h>
+#include <vector>
+
+struct Theme {
+    uint16_t background = YELLOW;
+    uint16_t foreground = WHITE;
+    uint16_t accent = ORANGE;
+    uint16_t text = BLACK;
+    uint16_t muted = DARKGREY;
+};
 
 #define FF_DEFAULT &default_font_16px
 
@@ -20,9 +31,20 @@ namespace esphome
     {
         class M5DialDisplay {
             protected:
+                Theme theme_{};
                 uint16_t backgroundColor = YELLOW;
 
                 LovyanGFX* gfx = &M5Dial.Display;
+                lgfx::LGFX_Sprite sprite_prev_{&M5Dial.Display};
+                lgfx::LGFX_Sprite sprite_next_{&M5Dial.Display};
+                bool transitions_enabled_ = false;
+                bool sprites_ready_ = false;
+                bool transition_active_ = false;
+                uint32_t transition_start_ms_ = 0;
+                uint32_t transition_duration_ms_ = 300;
+                std::vector<uint16_t> blend_line_{};
+
+                enum class Target { DEVICE, PREV, NEXT } target_ = Target::DEVICE;
 
                 int timeToScreenOff = 30000;
                 unsigned long lastEvent = 0;
@@ -71,12 +93,96 @@ namespace esphome
                 }
 
                 LovyanGFX* getGfx() {
-                    return gfx;
+                    switch (target_) {
+                        case Target::PREV:
+                            return sprites_ready_ ? &sprite_prev_ : gfx;
+                        case Target::NEXT:
+                            return sprites_ready_ ? &sprite_next_ : gfx;
+                        case Target::DEVICE:
+                        default:
+                            return gfx;
+                    }
                 }
 
                 void setFontName(std::string name){
                     this->fontName = name;
                 }
+
+                void setTheme(const Theme& t){
+                    this->theme_ = t;
+                    this->backgroundColor = t.background;
+                }
+                const Theme& theme() const { return this->theme_; }
+
+                void setTransitionsEnabled(bool enabled){ this->transitions_enabled_ = enabled; }
+                bool transitionsEnabled() const { return this->transitions_enabled_; }
+                void setTransitionDuration(uint32_t ms){ this->transition_duration_ms_ = ms; }
+                bool transitionsSupported(){ return ensureSprites(); }
+
+                void usePrevTarget(){ this->target_ = Target::PREV; }
+                void useNextTarget(){ this->target_ = Target::NEXT; }
+                void useDeviceTarget(){ this->target_ = Target::DEVICE; }
+
+            protected:
+                bool ensureSprites(){
+                    if (sprites_ready_) return true;
+                    sprite_prev_.setColorDepth(16);
+                    sprite_next_.setColorDepth(16);
+                    if (!sprite_prev_.createSprite(getWidth(), getHeight())) return false;
+                    if (!sprite_next_.createSprite(getWidth(), getHeight())) return false;
+                    blend_line_.resize(getWidth());
+                    sprites_ready_ = true;
+                    return true;
+                }
+
+                static inline uint16_t blend565(uint16_t c0, uint16_t c1, float t){
+                    uint32_t r0 = (c0 >> 11) & 0x1F;
+                    uint32_t g0 = (c0 >> 5) & 0x3F;
+                    uint32_t b0 = (c0) & 0x1F;
+                    uint32_t r1 = (c1 >> 11) & 0x1F;
+                    uint32_t g1 = (c1 >> 5) & 0x3F;
+                    uint32_t b1 = (c1) & 0x1F;
+                    uint32_t r = r0 + (int)((r1 - r0) * t);
+                    uint32_t g = g0 + (int)((g1 - g0) * t);
+                    uint32_t b = b0 + (int)((b1 - b0) * t);
+                    return (r << 11) | (g << 5) | (b);
+                }
+
+            public:
+                bool startTransition(uint32_t duration_ms){
+                    if (!transitions_enabled_) return false;
+                    if (!ensureSprites()) return false;
+                    transition_active_ = true;
+                    transition_start_ms_ = esphome::millis();
+                    transition_duration_ms_ = duration_ms;
+                    return true;
+                }
+
+                bool tickTransition(){
+                    if (!transition_active_ || !sprites_ready_) return false;
+                    uint32_t now = esphome::millis();
+                    float t = (float)(now - transition_start_ms_) / (float)transition_duration_ms_;
+                    if (t >= 1.0f){
+                        transition_active_ = false;
+                        sprite_next_.pushSprite(0,0);
+                        return false;
+                    }
+                    int w = sprite_prev_.width();
+                    int h = sprite_prev_.height();
+                    uint16_t* buf_prev = (uint16_t*)sprite_prev_.getBuffer();
+                    uint16_t* buf_next = (uint16_t*)sprite_next_.getBuffer();
+                    for(int y=0; y<h; y++){
+                        uint16_t* line_prev = buf_prev + y*w;
+                        uint16_t* line_next = buf_next + y*w;
+                        for(int x=0; x<w; x++){
+                            blend_line_[x] = blend565(line_prev[x], line_next[x], t);
+                        }
+                        gfx->pushImage(0, y, w, 1, blend_line_.data());
+                    }
+                    return true;
+                }
+
+                bool isTransitionActive() const { return transition_active_; }
 
                 void setFontFactor(float factor){
                     this->fontFactor = factor;
@@ -87,11 +193,12 @@ namespace esphome
                 }
 
                 void setBackgroundColor(uint16_t color){
-                    this->backgroundColor = backgroundColor;
+                    this->backgroundColor = color;
+                    this->theme_.background = color;
                 }
 
                 uint16_t getBackgroundColor(){
-                    return this->backgroundColor;
+                    return this->theme_.background;
                 }
 
                 void setScreensaver(Screensaver* saver){

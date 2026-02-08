@@ -14,6 +14,14 @@ namespace esphome
                 bool use_custom_value = false;
                 std::string custom_value = "";
 
+                float display_value_ = 0.0f;
+                bool display_value_init_ = false;
+                bool anim_active_ = false;
+                uint32_t anim_start_ms_ = 0;
+                uint32_t anim_duration_ms_ = 200;
+                float anim_from_ = 0.0f;
+                float anim_to_ = 0.0f;
+
 
                 void showPercentageMenu(M5DialDisplay& display){
                     LovyanGFX* gfx = display.getGfx();
@@ -21,14 +29,21 @@ namespace esphome
                     uint16_t height = gfx->height();
                     uint16_t width  = gfx->width();
 
-                    gfx->setTextColor(MAROON);
+                    const Theme& theme = display.theme();
+                    uint16_t bg = theme.background;
+                    uint16_t accent = theme.accent;
+                    uint16_t accent2 = theme.foreground;
+                    uint16_t textColor = theme.text;
+
+                    float disp_val = getAnimatedValue();
+                    float valOnArc = (getMaxValue()==0?240:((float)240 / (this->getMaxValue() - this->getMinValue())) * (disp_val - this->getMinValue())) + 150;
+
+                    gfx->setTextColor(textColor);
                     gfx->setTextDatum(middle_center);
 
                     gfx->startWrite();                      // Secure SPI bus
 
-                    display.clear();
-
-                    float valOnArc = (getMaxValue()==0?240:((float)240 / (this->getMaxValue() - this->getMinValue())) * (getValue() - this->getMinValue())) + 150;
+                    display.clear(bg);
 
                     if(this->isBarActive()){
                         // Round %-Bar
@@ -38,7 +53,7 @@ namespace esphome
                                     100,
                                     150,
                                     valOnArc,
-                                    RED
+                                    accent
                                     );
 
                         gfx->fillArc(width / 2,
@@ -47,7 +62,7 @@ namespace esphome
                                     100,
                                     valOnArc,
                                     390,
-                                    ORANGE
+                                    accent2
                                     );
                     } else {
                         gfx->fillArc(width / 2,
@@ -56,13 +71,13 @@ namespace esphome
                                     100,
                                     150,
                                     390,
-                                    display.getBackgroundColor()
+                                    bg
                                     );
                     }
 
                     // Percent
                     display.setFontsize(1.7);
-                    gfx->drawString(use_custom_value ? custom_value.c_str() : (String(getValue()) + this->unit.c_str()).c_str(),
+                    gfx->drawString(use_custom_value ? custom_value.c_str() : (String((int)round(disp_val)) + this->unit.c_str()).c_str(),
                                     width / 2,
                                     height / 2 - 70);
 
@@ -85,6 +100,33 @@ namespace esphome
  
 
                     gfx->endWrite();                      // Release SPI bus
+                }
+
+                float getAnimatedValue(){
+                    if (!display_value_init_){
+                        display_value_ = this->getValue();
+                        display_value_init_ = true;
+                        return display_value_;
+                    }
+                    if (!anim_active_) return display_value_;
+                    uint32_t now = esphome::millis();
+                    float t = (float)(now - anim_start_ms_) / (float)anim_duration_ms_;
+                    if (t >= 1.0f){
+                        anim_active_ = false;
+                        display_value_ = anim_to_;
+                        return display_value_;
+                    }
+                    float eased = 1.0f - (1.0f - t) * (1.0f - t);
+                    display_value_ = anim_from_ + (anim_to_ - anim_from_) * eased;
+                    return display_value_;
+                }
+
+                void animateTo(float target){
+                    anim_from_ = display_value_init_ ? display_value_ : (float)getValue();
+                    anim_to_ = target;
+                    anim_start_ms_ = esphome::millis();
+                    anim_active_ = true;
+                    display_value_init_ = true;
                 }
 
             public:
@@ -126,6 +168,9 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     ESP_LOGD("DISPLAY", "refresh Display: Percentage-Modus");
+                    if ((int)round(anim_to_) != this->getValue()) {
+                        animateTo(this->getValue());
+                    }
                     showPercentageMenu(display);
                 }
                 

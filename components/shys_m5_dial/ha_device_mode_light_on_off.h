@@ -22,12 +22,16 @@ namespace esphome
                     uint16_t height = gfx->height();
                     uint16_t width  = gfx->width();
 
-                    gfx->setTextColor(MAROON);
+                    const Theme& theme = display.theme();
+                    uint16_t bg = currentValue>0 ? theme.accent : theme.muted;
+                    uint16_t textColor = theme.text;
+
+                    gfx->setTextColor(textColor);
                     gfx->setTextDatum(middle_center);
 
                     gfx->startWrite();                      // Secure SPI bus
 
-                    display.clear(currentValue>0?YELLOW:RED);
+                    display.clear(bg);
 
                     display.setFontsize(3);
                     gfx->drawString(currentValue>0?"on":"off",

@@ -34,6 +34,11 @@ namespace esphome
       int apiSendDelay = 1000; // Verzögerung nach Wert-Änderung (um nicht jeden Wert beim drehen des Rades zu senden)
       int apiSendLock = 3000;  // Wartezeit zwischen einzelnden API-Aufrufen
 
+      bool uiTransitions = false;
+      int uiTransitionDuration = 300;
+      bool uiAnimations = true;
+      Theme uiTheme{};
+
       // -------------------------------
 
       HaDevice* devices[MAX_DEVICE_COUNT];
@@ -66,6 +71,13 @@ namespace esphome
           return strncmp(pre, str, strlen(pre)) == 0;
       }
 
+      static uint16_t rgbTo565(uint32_t rgb){
+        uint8_t r = (rgb >> 16) & 0xFF;
+        uint8_t g = (rgb >> 8) & 0xFF;
+        uint8_t b = (rgb) & 0xFF;
+        return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+      }
+
       int getCurrentValue(){
         return devices[currentDevice]->getValue();
       }
@@ -81,13 +93,30 @@ namespace esphome
       }
 
       void refreshDisplay(bool forceRefresh){
-        if(forceRefresh || isDisplayRefreshNeeded()){
-            devices[currentDevice]->refreshDisplay(*m5DialDisplay, lastDisplayDevice != currentDevice);
+        bool deviceChanged = lastDisplayDevice != currentDevice;
+        bool modeChanged = devices[currentDevice]->getCurrentModeIndex() != lastModeIndex;
+        bool shouldRefresh = forceRefresh || isDisplayRefreshNeeded() || deviceChanged || modeChanged;
+        if(!shouldRefresh) return;
 
-            lastDisplayDevice  = currentDevice;
-            lastModeIndex      = devices[currentDevice]->getCurrentModeIndex();
-            lastDisplayValue   = getCurrentValue();
+        if (uiTransitions && m5DialDisplay->transitionsEnabled() && m5DialDisplay->transitionsSupported() && (deviceChanged || modeChanged)) {
+          // Render prev frame
+          if (lastDisplayDevice >= 0 && lastDisplayDevice < deviceAnzahl) {
+            m5DialDisplay->usePrevTarget();
+            devices[lastDisplayDevice]->refreshDisplay(*m5DialDisplay, true);
+          }
+          // Render next frame
+          m5DialDisplay->useNextTarget();
+          devices[currentDevice]->refreshDisplay(*m5DialDisplay, true);
+          m5DialDisplay->useDeviceTarget();
+          m5DialDisplay->startTransition(uiTransitionDuration);
+        } else {
+          devices[currentDevice]->refreshDisplay(*m5DialDisplay, deviceChanged || modeChanged);
         }
+
+        lastDisplayDevice  = currentDevice;
+        lastModeIndex      = devices[currentDevice]->getCurrentModeIndex();
+        lastDisplayValue   = getCurrentValue();
+        lastDisplayRefresh = esphome::millis();
       }
 
       void nextDevice(){
@@ -213,6 +242,25 @@ namespace esphome
         }
       }
 
+      void setUiTransitions(bool enabled){
+        this->uiTransitions = enabled;
+        if (m5DialDisplay) m5DialDisplay->setTransitionsEnabled(enabled);
+      }
+      void setUiTransitionDuration(int ms){
+        this->uiTransitionDuration = ms;
+        if (m5DialDisplay) m5DialDisplay->setTransitionDuration(ms);
+      }
+      void setUiAnimations(bool enabled){
+        this->uiAnimations = enabled;
+      }
+      void setUiTheme(uint32_t bg, uint32_t fg, uint32_t accent, uint32_t text){
+        this->uiTheme.background = rgbTo565(bg);
+        this->uiTheme.foreground = rgbTo565(fg);
+        this->uiTheme.accent = rgbTo565(accent);
+        this->uiTheme.text = rgbTo565(text);
+        if (m5DialDisplay) m5DialDisplay->setTheme(this->uiTheme);
+      }
+
 
       void setTimeComponent(esphome::time::RealTimeClock *clock) {
         this->local_time = clock;
@@ -325,6 +373,9 @@ namespace esphome
 
         m5DialDisplay->on_display_refresh(std::bind(&esphome::shys_m5_dial::ShysM5Dial::refreshDisplay, this, _1));
         m5DialDisplay->init();
+        m5DialDisplay->setTransitionsEnabled(uiTransitions);
+        m5DialDisplay->setTransitionDuration(uiTransitionDuration);
+        m5DialDisplay->setTheme(uiTheme);
 
         this->registerServices();
       }
@@ -335,6 +386,12 @@ namespace esphome
       */
       void doLoop(){
         if(api::global_api_server->is_connected()){
+          if (m5DialDisplay->isTransitionActive()) {
+            m5DialDisplay->tickTransition();
+            lastLoop = 1;
+            return;
+          }
+
           ESP_LOGD("LOOP", "Rotary");
           m5DialRotary->handleRotary();
 

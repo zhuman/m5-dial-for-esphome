@@ -29,6 +29,11 @@ CONF_DISPLAY_ROTATE                   = "display_rotate"
 
 CONF_TIME_COMPONENT                   = "time_component"
 
+CONF_UI_THEME                         = "ui_theme"
+CONF_UI_TRANSITIONS                   = "ui_transitions"
+CONF_UI_TRANSITION_DURATION           = "ui_transition_duration_ms"
+CONF_UI_ANIMATIONS                    = "ui_animations"
+
 
 # ALLGEMEINE MODE PARAMETER
 CONF_DEVICE_MODE_ENABLE               = "enable"
@@ -121,6 +126,15 @@ DEFAULT_MEDIA_PLAYER_ROTARY_STEP_WIDTH = 1
 DEFAULT_LOCK_ROTARY_STEP_WIDTH         = 1
 DEFAULT_SCREENSAVER                    = "clock"
 DEFAULT_CONF_DISPLAY_ROTATE            = 2
+DEFAULT_UI_THEME                       = {
+    "background": "yellow",
+    "foreground": "white",
+    "accent": "orange",
+    "text": "black",
+}
+DEFAULT_UI_TRANSITIONS                 = False
+DEFAULT_UI_TRANSITION_DURATION         = 300
+DEFAULT_UI_ANIMATIONS                  = True
 
 
 
@@ -146,6 +160,16 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_FONT, default=DEFAULT_FONT): cv.string,
     cv.Optional(CONF_FONT_FACTOR, default=DEFAULT_FONT_FACTOR): cv.float_range(0.1, 10.0),
     cv.Optional(CONF_DISPLAY_ROTATE, default=DEFAULT_CONF_DISPLAY_ROTATE): cv.int_range(0, 7),
+
+    cv.Optional(CONF_UI_THEME, default=DEFAULT_UI_THEME): cv.Schema({
+        cv.Optional("background", default="yellow"): cv.color,
+        cv.Optional("foreground", default="white"): cv.color,
+        cv.Optional("accent", default="orange"): cv.color,
+        cv.Optional("text", default="black"): cv.color,
+    }),
+    cv.Optional(CONF_UI_TRANSITIONS, default=DEFAULT_UI_TRANSITIONS): cv.boolean,
+    cv.Optional(CONF_UI_TRANSITION_DURATION, default=DEFAULT_UI_TRANSITION_DURATION): cv.int_range(50, 2000),
+    cv.Optional(CONF_UI_ANIMATIONS, default=DEFAULT_UI_ANIMATIONS): cv.boolean,
     
     cv.Required(CONF_TIME_COMPONENT): cv.use_id(time),
 
@@ -295,6 +319,11 @@ CONFIG_SCHEMA = cv.Schema({
 }).extend(cv.COMPONENT_SCHEMA)
 
 
+
+def _color_to_int(c):
+    return (c.red << 16) | (c.green << 8) | c.blue
+
+
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
@@ -334,6 +363,20 @@ async def to_code(config):
     if CONF_DISPLAY_ROTATE in config:
         displayRotate = config[CONF_DISPLAY_ROTATE]
         cg.add(var.setDisplayRotation(displayRotate))
+
+    if CONF_UI_THEME in config:
+        theme_conf = config[CONF_UI_THEME]
+        bg = _color_to_int(theme_conf["background"])
+        fg = _color_to_int(theme_conf["foreground"])
+        accent = _color_to_int(theme_conf["accent"])
+        text = _color_to_int(theme_conf["text"])
+        cg.add(var.setUiTheme(bg, fg, accent, text))
+    if CONF_UI_TRANSITIONS in config:
+        cg.add(var.setUiTransitions(config[CONF_UI_TRANSITIONS]))
+    if CONF_UI_TRANSITION_DURATION in config:
+        cg.add(var.setUiTransitionDuration(config[CONF_UI_TRANSITION_DURATION]))
+    if CONF_UI_ANIMATIONS in config:
+        cg.add(var.setUiAnimations(config[CONF_UI_ANIMATIONS]))
 
     if CONF_TIME_COMPONENT in config:
         time_component = await cg.get_variable(config[CONF_TIME_COMPONENT])
