@@ -109,7 +109,7 @@ namespace esphome
                     if(displayTitle){
                         gfx->drawString(this->media_title.c_str(),
                                         width / 2,
-                                        height / 2 + 65);                          
+                                        height / 2 + 65);
                     } else {
                         gfx->drawString(this->media_artist.c_str(),
                                         width / 2,
