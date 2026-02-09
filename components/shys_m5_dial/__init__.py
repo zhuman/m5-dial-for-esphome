@@ -136,6 +136,20 @@ DEFAULT_UI_TRANSITIONS                 = False
 DEFAULT_UI_TRANSITION_DURATION         = 300
 DEFAULT_UI_ANIMATIONS                  = True
 
+NAMED_COLORS = {
+    "black": 0x000000,
+    "white": 0xFFFFFF,
+    "yellow": 0xFFFF00,
+    "orange": 0xFFA500,
+    "red": 0xFF0000,
+    "green": 0x00FF00,
+    "blue": 0x0000FF,
+    "maroon": 0x800000,
+    "darkgrey": 0x555555,
+    "lightgrey": 0xAAAAAA,
+    "grey": 0x808080,
+    "gray": 0x808080,
+}
 
 
 SCREENSAVER = ["off", "clock"]
@@ -162,10 +176,10 @@ CONFIG_SCHEMA = cv.Schema({
     cv.Optional(CONF_DISPLAY_ROTATE, default=DEFAULT_CONF_DISPLAY_ROTATE): cv.int_range(0, 7),
 
     cv.Optional(CONF_UI_THEME, default=DEFAULT_UI_THEME): cv.Schema({
-        cv.Optional("background", default="yellow"): cv.color,
-        cv.Optional("foreground", default="white"): cv.color,
-        cv.Optional("accent", default="orange"): cv.color,
-        cv.Optional("text", default="black"): cv.color,
+        cv.Optional("background", default="yellow"): cv.All(cv.string, lambda v: validate_color(v)),
+        cv.Optional("foreground", default="white"): cv.All(cv.string, lambda v: validate_color(v)),
+        cv.Optional("accent", default="orange"): cv.All(cv.string, lambda v: validate_color(v)),
+        cv.Optional("text", default="black"): cv.All(cv.string, lambda v: validate_color(v)),
     }),
     cv.Optional(CONF_UI_TRANSITIONS, default=DEFAULT_UI_TRANSITIONS): cv.boolean,
     cv.Optional(CONF_UI_TRANSITION_DURATION, default=DEFAULT_UI_TRANSITION_DURATION): cv.int_range(50, 2000),
@@ -320,8 +334,31 @@ CONFIG_SCHEMA = cv.Schema({
 
 
 
+def validate_color(value):
+    if isinstance(value, int):
+        return value & 0xFFFFFF
+    try:
+        return cv.hex_int(value) & 0xFFFFFF
+    except cv.Invalid:
+        pass
+    value = cv.string_strict(value)
+    s = value.lower().strip()
+    if s in NAMED_COLORS:
+        return NAMED_COLORS[s]
+    if s.startswith('#'):
+        try:
+            return int(s[1:], 16) & 0xFFFFFF
+        except ValueError:
+            pass
+    raise cv.Invalid(f"Invalid color '{value}', expected name or hex like #RRGGBB")
+
+
 def _color_to_int(c):
-    return (c.red << 16) | (c.green << 8) | c.blue
+    if isinstance(c, int):
+        return c
+    if hasattr(c, 'red'):
+        return (c.red << 16) | (c.green << 8) | c.blue
+    raise ValueError(f"Unsupported color type: {c}")
 
 
 async def to_code(config):

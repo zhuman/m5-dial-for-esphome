@@ -83,10 +83,12 @@ namespace esphome
       }
 
       bool isDisplayRefreshNeeded(){
+        bool anim_refresh = devices[currentDevice]->isDisplayRefreshNeeded();
         if (getCurrentValue() != lastDisplayValue || 
               currentDevice != lastDisplayDevice ||
               devices[currentDevice]->getCurrentModeIndex() != lastModeIndex || 
-              devices[currentDevice]->isDisplayRefreshNeeded()){
+              anim_refresh){
+          if (anim_refresh) return true;
           return esphome::millis() - lastDisplayRefresh > displayRefeshPause;
         }
         return false;
@@ -154,6 +156,7 @@ namespace esphome
           devices[deviceAnzahl]->setRotaryStepWidth(this->rotaryStepWidth);
 
           devices[deviceAnzahl]->init();
+          devices[deviceAnzahl]->setAnimationsEnabled(this->uiAnimations);
 
           deviceAnzahl++;
           ESP_LOGD("DEVICE", "Device added");

@@ -146,8 +146,8 @@ namespace esphome
                 void registerHAListener() {
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>(), 
-                                [this](const std::string &state) {
+                                optional<std::string>(),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }
@@ -169,8 +169,8 @@ namespace esphome
 
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>("duration"), 
-                                [this](const std::string &state) {
+                                optional<std::string>("duration"),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }
@@ -183,8 +183,8 @@ namespace esphome
 
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>("remaining"), 
-                                [this](const std::string &state) {
+                                optional<std::string>("remaining"),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }
@@ -197,8 +197,8 @@ namespace esphome
 
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>("finishes_at"), 
-                                [this](const std::string &state) {
+                                optional<std::string>("finishes_at"),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }

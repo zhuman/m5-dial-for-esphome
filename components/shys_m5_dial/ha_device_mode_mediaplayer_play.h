@@ -142,14 +142,11 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("volume_level"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        ESP_LOGI("HA_API", "Got Volume value %s for %s", state.c_str(), this->device.getEntityId().c_str());
-                        auto val = parse_number<float>(state);
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        std::string s = std::string(state.c_str());
+                        ESP_LOGI("HA_API", "Got Volume value %s for %s", s.c_str(), this->device.getEntityId().c_str());
+                        auto val = parse_number<float>(s);
                         ESP_LOGI("HA_API", "Parsed Volume value %f for %s", val.value(), this->device.getEntityId().c_str());
 
                         if (!val.has_value()) {
@@ -166,13 +163,9 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>(), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        this->player_state = state;
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        this->player_state = std::string(state.c_str());
 
                         this->displayRefreshNeeded = true;
                         ESP_LOGI("HA_API", "Got State %s for %s", state.c_str(), this->device.getEntityId().c_str());
@@ -181,13 +174,9 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("media_title"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        this->media_title = state;
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        this->media_title = std::string(state.c_str());
 
                         this->displayRefreshNeeded = true;
                         ESP_LOGI("HA_API", "Got Title %s for %s", state.c_str(), this->device.getEntityId().c_str());
@@ -196,13 +185,9 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("media_artist"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        this->media_artist = state;
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        this->media_artist = std::string(state.c_str());
 
                         this->displayRefreshNeeded = true;
                         ESP_LOGI("HA_API", "Got Artist %s for %s", state.c_str(), this->device.getEntityId().c_str());
@@ -211,13 +196,9 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("media_album_name"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        this->media_album_name = state;
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        this->media_album_name = std::string(state.c_str());
 
                         this->displayRefreshNeeded = true;
                         ESP_LOGI("HA_API", "Got Album %s for %s", state.c_str(), this->device.getEntityId().c_str());
@@ -226,12 +207,7 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("media_duration"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
+                                [this](esphome::StringRef state) {
                         auto val = parse_number<int>(state);
                         if (!val.has_value()) {
                             this->media_duration = 0;
@@ -245,12 +221,7 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("media_position"), 
-                                [this](const std::string &state) {
-                        
-                        if(this->isValueModified()){
-                            return;
-                        }
-
+                                [this](esphome::StringRef state) {
                         auto val = parse_number<int>(state);
                         if (!val.has_value()) {
                             this->media_position = 0;

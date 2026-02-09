@@ -57,12 +57,8 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>(), 
-                                [this](const std::string &state) {
-                                    
-                        if(this->isValueModified()){
-                            return;
-                        }
-
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
                         int newState = strcmp("on", state.c_str())==0?1:0;
 
                         this->setReceivedValue(newState);

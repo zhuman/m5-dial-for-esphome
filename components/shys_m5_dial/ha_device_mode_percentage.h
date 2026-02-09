@@ -14,6 +14,7 @@ namespace esphome
                 bool use_custom_value = false;
                 std::string custom_value = "";
 
+                bool animations_enabled_ = true;
                 float display_value_ = 0.0f;
                 bool display_value_init_ = false;
                 bool anim_active_ = false;
@@ -122,10 +123,11 @@ namespace esphome
                 }
 
                 void animateTo(float target){
-                    anim_from_ = display_value_init_ ? display_value_ : (float)getValue();
+                    float from = display_value_init_ ? display_value_ : (float)getValue();
+                    anim_from_ = from;
                     anim_to_ = target;
                     anim_start_ms_ = esphome::millis();
-                    anim_active_ = true;
+                    anim_active_ = (from != target);
                     display_value_init_ = true;
                 }
 
@@ -158,6 +160,14 @@ namespace esphome
                     std::copy(newIcon, newIcon + size, icon);
                 }
 
+                void setAnimationsEnabled(bool enabled) override {
+                    animations_enabled_ = enabled;
+                }
+
+                bool isDisplayRefreshNeeded() override {
+                    return anim_active_;
+                }
+
                 void activateBar(bool activate){
                     this->barActive = activate;
                 }
@@ -168,7 +178,11 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     ESP_LOGD("DISPLAY", "refresh Display: Percentage-Modus");
-                    if ((int)round(anim_to_) != this->getValue()) {
+                    if (!animations_enabled_) {
+                        display_value_ = this->getValue();
+                        display_value_init_ = true;
+                        anim_active_ = false;
+                    } else if ((int)round(anim_to_) != this->getValue()) {
                         animateTo(this->getValue());
                     }
                     showPercentageMenu(display);

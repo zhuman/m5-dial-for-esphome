@@ -199,6 +199,8 @@ namespace esphome
 
                 virtual void onLoop(){}
 
+                virtual void setAnimationsEnabled(bool enabled) {}
+
 
                 void updateHomeAssistantValue(){
                     if(this->isValueModified() && this->isApiCallNeeded() ) {

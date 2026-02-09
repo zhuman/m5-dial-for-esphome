@@ -128,13 +128,9 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>(), 
-                                [this](const std::string &state) {
-
-                        if(this->isValueModified()){
-                            return;
-                        }
-
-                        this->setReceivedLockState(state);
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        this->setReceivedLockState(std::string(state.c_str()));
                         ESP_LOGI("HA_API", "Got State %s for %s", state.c_str(), this->device.getEntityId().c_str());
                     });
                 }

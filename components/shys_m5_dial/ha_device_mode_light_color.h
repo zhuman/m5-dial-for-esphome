@@ -154,17 +154,14 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>(attrName), 
-                                [this](const std::string &state) {
-                                
-                        if(this->isValueModified()){
-                            return;
-                        }
-
+                                [this](esphome::StringRef state) {
+                        if(this->isValueModified()) return;
+                        std::string s = std::string(state.c_str());
                         std::string colorString = "";          
-                        std::string::size_type pos = state.find(',');
+                        std::string::size_type pos = s.find(',');
                         
                         if (pos != std::string::npos) {
-                            colorString = state.substr(1, pos-1);
+                            colorString = s.substr(1, pos-1);
                         }
                         ESP_LOGD("HA_API", "HS_Color value %s for %s", colorString.c_str(), this->device.getEntityId().c_str());
 

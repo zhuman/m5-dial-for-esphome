@@ -194,12 +194,7 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("color_temp_kelvin"), 
-                                [this](const std::string &state) {
-
-                        if(this->isValueModified()){
-                            return;
-                        }
-
+                                [this](esphome::StringRef state) {
                         auto val = parse_number<int>(state);
                         if (!val.has_value()) {
                             this->setReceivedValue(0);

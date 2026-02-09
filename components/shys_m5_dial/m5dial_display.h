@@ -340,12 +340,12 @@ namespace esphome
                     coord c2 = getColorCoord(r2, degree-step);
                     coord c3 = getColorCoord(r2, degree+step);
 
-                    M5Dial.Display.fillTriangle(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y, color);
+                    getGfx()->fillTriangle(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y, color);
 
                     c1 = getColorCoord(r1, degree);
                     c2 = getColorCoord(r1, degree-step-step);
                     c3 = getColorCoord(r2, degree-step);
-                    M5Dial.Display.fillTriangle(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y, color);
+                    getGfx()->fillTriangle(c1.x, c1.y, c2.x, c2.y, c3.x, c3.y, color);
                 }
 
                 void setFontsize(float size) {
@@ -372,15 +372,15 @@ namespace esphome
                 }
 
                 void drawBitmap(const uint8_t* bmp, int size, uint8_t x, uint8_t y, uint8_t width, uint8_t height){
-                    M5Dial.Display.drawJpg(bmp, size, x, y, width, height, 0, 0);
+                    getGfx()->drawJpg(bmp, size, x, y, width, height, 0, 0);
                 }
 
                 void drawBitmapTransparent(const uint16_t* bmp, uint8_t x, uint8_t y, uint8_t width, uint8_t height, uint32_t transparentColor){
-                    M5Dial.Display.pushImage(x, y, width, height, bmp, transparentColor);
+                    getGfx()->pushImage(x, y, width, height, bmp, transparentColor);
                 }
 
                 void clear(uint16_t bgColor){
-                    M5Dial.Display.fillRect(0, 0, getWidth(), getHeight(), bgColor);
+                    getGfx()->fillRect(0, 0, getWidth(), getHeight(), bgColor);
                 }
 
                 void clear(){

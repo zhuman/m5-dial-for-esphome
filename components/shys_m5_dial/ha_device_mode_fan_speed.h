@@ -154,8 +154,8 @@ namespace esphome
                 void registerHAListener() override {
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>(), 
-                                [this](const std::string &state) {
+                                optional<std::string>(),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }
@@ -166,8 +166,8 @@ namespace esphome
 
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
-                                optional<std::string>("percentage"), 
-                                [this](const std::string &state) {
+                                optional<std::string>("percentage"),
+                                [this](esphome::StringRef state) {
                         if(this->isValueModified()){
                             return;
                         }
@@ -184,8 +184,8 @@ namespace esphome
                     if(this->changeableDirection){
                         api::global_api_server->subscribe_home_assistant_state(
                                     this->device.getEntityId().c_str(),
-                                    optional<std::string>("direction"), 
-                                    [this](const std::string &state) {
+                                    optional<std::string>("direction"),
+                                    [this](esphome::StringRef state) {
                             if(this->isValueModified()){
                                 return;
                             }

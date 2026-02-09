@@ -38,26 +38,27 @@ namespace esphome
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>(), 
-                                [this](const std::string &state) {
+                                [this](esphome::StringRef state) {
 
                         if(this->isValueModified()){
                             return;
                         }
 
-                        this->setHvacMode(state.c_str());
-                        ESP_LOGI("HA_API", "Got Mode %s for %s", state.c_str(), this->device.getEntityId().c_str());
+                        std::string s = std::string(state.c_str());
+                        this->setHvacMode(s.c_str());
+                        ESP_LOGI("HA_API", "Got Mode %s for %s", s.c_str(), this->device.getEntityId().c_str());
                     });
 
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
                                 optional<std::string>("temperature"), 
-                                [this](const std::string &state) {
+                                [this](esphome::StringRef state) {
 
                         if(this->isValueModified()){
                             return;
                         }
 
-                        auto val = parse_number<float>(state);
+                        auto val = parse_number<float>(std::string(state.c_str()));
 
                         if (!val.has_value()) {
                             this->setReceivedValue(0);

@@ -188,6 +188,12 @@ namespace esphome
                     getCurrentMode()->updateHomeAssistantValue();
                 }
 
+                void setAnimationsEnabled(bool enabled){
+                    for (auto *mode : deviceModes) {
+                        if (mode) mode->setAnimationsEnabled(enabled);
+                    }
+                }
+
                 float getRadiusFromCoord(M5DialDisplay& display, float touchX, float touchY) {
                     return display.getRadiusFromCoord(touchX, touchY);
                 }
