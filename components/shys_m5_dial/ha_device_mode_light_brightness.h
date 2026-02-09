@@ -16,11 +16,6 @@ namespace esphome
                     this->setIcon(LIGHT_ON_IMG, 4900);
                 }
 
-                void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Helligkeits-Modus");
-                    this->showPercentageMenu(display);
-                }
-
                 void registerHAListener() override {
                     api::global_api_server->subscribe_home_assistant_state(
                                 this->device.getEntityId().c_str(),
@@ -31,8 +26,8 @@ namespace esphome
                         }
                         auto val = parse_number<int>(state);
                         if (!val.has_value()) {
-                            this->setReceivedValue(0);
                             ESP_LOGD("HA_API", "No Brightness value in %s for %s", state.c_str(), this->device.getEntityId().c_str());
+                            return;
                         } else {
                             this->setReceivedValue(round((float)val.value()*100/255));
                             ESP_LOGI("HA_API", "Got Brightness value %i for %s", val.value(), this->device.getEntityId().c_str());

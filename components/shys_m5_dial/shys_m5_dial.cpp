@@ -35,13 +35,17 @@ namespace esphome
         /**
          * @brief dump_config
          *
-         * Ausgabe der aktuellen Konfiguration im Log nach Initialisierung
+         * Output of the current configuration in the log after initialization.
          */
         void ShysM5Dial::dump_config()
         {
             ESP_LOGCONFIG(TAG, "-----------------------------------");
-            ESP_LOGCONFIG(TAG, "Shys M5 Dial");
+            ESP_LOGCONFIG(TAG, "Shys M5 Dial (build flicker-fix#3)");
             ESP_LOGCONFIG(TAG, "-----------------------------------");
+            ESP_LOGCONFIG(TAG, "ui_transitions: %s", this->uiTransitions ? "true" : "false");
+            ESP_LOGCONFIG(TAG, "ui_transition_duration_ms: %d", this->uiTransitionDuration);
+            ESP_LOGCONFIG(TAG, "ui_animations: %s", this->uiAnimations ? "true" : "false");
+            ESP_LOGCONFIG(TAG, "theme bg=%u fg=%u accent=%u text=%u", this->uiTheme.background, this->uiTheme.foreground, this->uiTheme.accent, this->uiTheme.text);
         }
 
     }

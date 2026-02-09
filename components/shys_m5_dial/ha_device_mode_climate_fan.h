@@ -74,7 +74,7 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     this->showModeSelection(display);
-                    ESP_LOGD("DISPLAY", "Climate-Fan-Modus");
+                    ESP_LOGD("DISPLAY", "Climate fan mode");
 
                     this->displayRefreshNeeded = false;
                 }

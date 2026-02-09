@@ -66,7 +66,7 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     this->showSourceSelection(display);
-                    ESP_LOGD("DISPLAY", "Source-Modus");
+                    ESP_LOGD("DISPLAY", "Source mode");
 
                     this->displayRefreshNeeded = false;
                 }

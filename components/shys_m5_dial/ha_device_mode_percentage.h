@@ -1,4 +1,5 @@
 #pragma once
+#include "text_marquee.h"
 
 namespace esphome
 {
@@ -13,6 +14,8 @@ namespace esphome
                 bool barActive = true;
                 bool use_custom_value = false;
                 std::string custom_value = "";
+
+                TextMarquee device_name_marquee_{};
 
                 bool animations_enabled_ = true;
                 float display_value_ = 0.0f;
@@ -93,14 +96,18 @@ namespace esphome
                         display.drawBitmapTransparent(this->icon, width/2-35, height/2-30, 70, 70, 0xFFFF);
                     }
 
-                    // Device Name
+                    // Device Name (marquee)
                     display.setFontsize(1);
-                    gfx->drawString(this->device.getName().c_str(),
-                                    width / 2,
-                                    height / 2 + 90);
+                    device_name_marquee_.setViewport(width - 40);
+                    device_name_marquee_.setText(this->device.getName());
+                    bool changed = device_name_marquee_.update(gfx, esphome::millis());
+                    device_name_marquee_.draw(gfx, width / 2, height / 2 + 90, textColor);
  
 
                     gfx->endWrite();                      // Release SPI bus
+
+                    // If marquee is active, keep refreshing
+                    this->displayRefreshNeeded = changed && device_name_marquee_.isActive();
                 }
 
                 float getAnimatedValue(){
@@ -109,10 +116,26 @@ namespace esphome
                         display_value_init_ = true;
                         return display_value_;
                     }
-                    if (!anim_active_) return display_value_;
+
+                    if (animations_enabled_ && getValue() != anim_to_)
+                    {
+                        animateTo(this->getValue());
+                    }
+
+                    if (!anim_active_)
+                    {
+                        display_value_ = this->getValue();
+                        return display_value_;
+                    }
                     uint32_t now = esphome::millis();
                     float t = (float)(now - anim_start_ms_) / (float)anim_duration_ms_;
                     if (t >= 1.0f){
+                        anim_active_ = false;
+                        display_value_ = anim_to_;
+                        return display_value_;
+                    }
+                    // safety hard stop
+                    if (now - anim_start_ms_ > (anim_duration_ms_ * 2)){
                         anim_active_ = false;
                         display_value_ = anim_to_;
                         return display_value_;
@@ -127,7 +150,7 @@ namespace esphome
                     anim_from_ = from;
                     anim_to_ = target;
                     anim_start_ms_ = esphome::millis();
-                    anim_active_ = (from != target);
+                    anim_active_ = (round(from) != round(target));
                     display_value_init_ = true;
                 }
 
@@ -162,10 +185,16 @@ namespace esphome
 
                 void setAnimationsEnabled(bool enabled) override {
                     animations_enabled_ = enabled;
+                    if (!enabled) {
+                        anim_active_ = false;
+                        display_value_ = this->getValue();
+                        display_value_init_ = true;
+                        this->displayRefreshNeeded = true;
+                    }
                 }
 
                 bool isDisplayRefreshNeeded() override {
-                    return anim_active_;
+                    return (animations_enabled_ && anim_active_) || this->displayRefreshNeeded || device_name_marquee_.isActive();
                 }
 
                 void activateBar(bool activate){
@@ -177,15 +206,9 @@ namespace esphome
                 }
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Percentage-Modus");
-                    if (!animations_enabled_) {
-                        display_value_ = this->getValue();
-                        display_value_init_ = true;
-                        anim_active_ = false;
-                    } else if ((int)round(anim_to_) != this->getValue()) {
-                        animateTo(this->getValue());
-                    }
+                    //ESP_LOGD("DISPLAY", "refresh display: percentage mode val=%d disp=%.2f anim=%d from=%.2f to=%.2f", this->getValue(), display_value_, anim_active_, anim_from_, anim_to_);
                     showPercentageMenu(display);
+                    this->displayRefreshNeeded = false;
                 }
                 
                 bool onTouch(M5DialDisplay& display, uint16_t x, uint16_t y) override {

@@ -141,7 +141,7 @@ namespace esphome
                 }
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Farbwahl-Modus");
+                    ESP_LOGD("DISPLAY", "refresh display: color selection mode");
                     if(init){
                         showColorMenu(display);
                     } else {
@@ -179,7 +179,7 @@ namespace esphome
                 bool onTouch(M5DialDisplay& display, uint16_t x, uint16_t y) override {
                     uint16_t degree = display.getDegByCoord(x, y);
                     setValue(degree);
-                    ESP_LOGD("TOUCH", "Neuen Farbwert auf %d gesetzt", degree);
+                    ESP_LOGD("TOUCH", "Set new color value to %d", degree);
                     
                     return true;
                 }

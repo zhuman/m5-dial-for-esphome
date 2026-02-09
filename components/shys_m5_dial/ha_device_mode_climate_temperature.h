@@ -31,7 +31,7 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     this->showPercentageMenu(display);
-                    ESP_LOGD("DISPLAY", "Temperature-Modus");
+                    ESP_LOGD("DISPLAY", "Temperature mode");
                 }
 
                 void registerHAListener() override {

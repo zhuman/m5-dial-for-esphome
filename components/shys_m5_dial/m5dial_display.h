@@ -36,10 +36,12 @@ namespace esphome
 
                 LovyanGFX* gfx = &M5Dial.Display;
                 lgfx::LGFX_Sprite sprite_prev_{&M5Dial.Display};
-                lgfx::LGFX_Sprite sprite_next_{&M5Dial.Display};
+                lgfx::LGFX_Sprite sprite_next_or_current_{&M5Dial.Display};
                 bool transitions_enabled_ = false;
                 bool sprites_ready_ = false;
+                bool sprites_failed_ = false;
                 bool transition_active_ = false;
+                bool double_buffering_ = true;
                 uint32_t transition_start_ms_ = 0;
                 uint32_t transition_duration_ms_ = 300;
                 std::vector<uint16_t> blend_line_{};
@@ -97,10 +99,10 @@ namespace esphome
                         case Target::PREV:
                             return sprites_ready_ ? &sprite_prev_ : gfx;
                         case Target::NEXT:
-                            return sprites_ready_ ? &sprite_next_ : gfx;
+                            return sprites_ready_ ? &sprite_next_or_current_ : gfx;
                         case Target::DEVICE:
                         default:
-                            return gfx;
+                            return (double_buffering_ && sprites_ready_) ? &sprite_next_or_current_ : gfx;
                     }
                 }
 
@@ -117,7 +119,16 @@ namespace esphome
                 void setTransitionsEnabled(bool enabled){ this->transitions_enabled_ = enabled; }
                 bool transitionsEnabled() const { return this->transitions_enabled_; }
                 void setTransitionDuration(uint32_t ms){ this->transition_duration_ms_ = ms; }
-                bool transitionsSupported(){ return ensureSprites(); }
+                bool transitionsSupported(){
+                    if (sprites_failed_) return false;
+                    bool ok = ensureSprites();
+                    if (!ok) {
+                        ESP_LOGW("DISPLAY", "Transitions disabled: sprite allocation failed");
+                        transitions_enabled_ = false;
+                        sprites_failed_ = true;
+                    }
+                    return ok;
+                }
 
                 void usePrevTarget(){ this->target_ = Target::PREV; }
                 void useNextTarget(){ this->target_ = Target::NEXT; }
@@ -125,11 +136,28 @@ namespace esphome
 
             protected:
                 bool ensureSprites(){
+                    ESP_LOGD("DISPLAY", "ensureSprites called ready=%d failed=%d", sprites_ready_, sprites_failed_);
                     if (sprites_ready_) return true;
-                    sprite_prev_.setColorDepth(16);
-                    sprite_next_.setColorDepth(16);
-                    if (!sprite_prev_.createSprite(getWidth(), getHeight())) return false;
-                    if (!sprite_next_.createSprite(getWidth(), getHeight())) return false;
+                    if (sprites_failed_) return false;
+
+                    if (transitions_enabled_)
+                    {
+                        sprite_prev_.setColorDepth(16);        
+                        if (!sprite_prev_.createSprite(getWidth(), getHeight())) {
+                            ESP_LOGW("DISPLAY", "createSprite prev failed %dx%d", getWidth(), getHeight());
+                            sprites_failed_ = true;
+                            return false;
+                        }
+                    }
+                    if (transitions_enabled_ || double_buffering_)
+                    {
+                        sprite_next_or_current_.setColorDepth(16);
+                        if (!sprite_next_or_current_.createSprite(getWidth(), getHeight())) {
+                            ESP_LOGW("DISPLAY", "createSprite next failed %dx%d", getWidth(), getHeight());
+                            sprites_failed_ = true;
+                            return false;
+                        }
+                    }
                     blend_line_.resize(getWidth());
                     sprites_ready_ = true;
                     return true;
@@ -151,7 +179,7 @@ namespace esphome
             public:
                 bool startTransition(uint32_t duration_ms){
                     if (!transitions_enabled_) return false;
-                    if (!ensureSprites()) return false;
+                    if (!ensureSprites()) { transitions_enabled_ = false; return false; }
                     transition_active_ = true;
                     transition_start_ms_ = esphome::millis();
                     transition_duration_ms_ = duration_ms;
@@ -164,13 +192,13 @@ namespace esphome
                     float t = (float)(now - transition_start_ms_) / (float)transition_duration_ms_;
                     if (t >= 1.0f){
                         transition_active_ = false;
-                        sprite_next_.pushSprite(0,0);
+                        sprite_next_or_current_.pushSprite(0,0);
                         return false;
                     }
                     int w = sprite_prev_.width();
                     int h = sprite_prev_.height();
                     uint16_t* buf_prev = (uint16_t*)sprite_prev_.getBuffer();
-                    uint16_t* buf_next = (uint16_t*)sprite_next_.getBuffer();
+                    uint16_t* buf_next = (uint16_t*)sprite_next_or_current_.getBuffer();
                     for(int y=0; y<h; y++){
                         uint16_t* line_prev = buf_prev + y*w;
                         uint16_t* line_next = buf_next + y*w;
@@ -179,6 +207,13 @@ namespace esphome
                         }
                         gfx->pushImage(0, y, w, 1, blend_line_.data());
                     }
+                    return true;
+                }
+
+                bool updateDoubleBufferedScreen(){
+                    if (!double_buffering_) return false;
+                    if (!sprites_ready_) return false;
+                    sprite_next_or_current_.pushSprite(0,0);
                     return true;
                 }
 

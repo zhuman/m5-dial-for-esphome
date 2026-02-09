@@ -135,7 +135,7 @@ namespace esphome
                 }
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Speed-Modus");
+                    ESP_LOGD("DISPLAY", "refresh display: speed mode");
                     if(this->changeableDirection){
                         this->showTwoWayFanMenu(display);
                     } else {

@@ -1,4 +1,5 @@
 #pragma once
+#include "text_marquee.h"
 
 namespace esphome
 {
@@ -11,6 +12,9 @@ namespace esphome
                 std::string media_title = "";
                 std::string media_artist = "";
                 std::string media_album_name = "";
+
+                TextMarquee title_marquee_{};
+                TextMarquee artist_marquee_{};
 
                 uint16_t media_duration = 0;
                 uint16_t media_position = 0;
@@ -103,21 +107,17 @@ namespace esphome
                     gfx->fillRect(width/2-50, height/2+40, getMediaPositionPct(), 5, RED);
 
 
-                    // Media-Artist/Title
+                    // Media-Artist/Title with marquee
                     display.setFontsize(.7);
                     bool displayTitle = ((millis() / 5000) % 2 == 1);
-                    if(displayTitle){
-                        gfx->drawString(this->media_title.c_str(),
-                                        width / 2,
-                                        height / 2 + 65);
-                    } else {
-                        gfx->drawString(this->media_artist.c_str(),
-                                        width / 2,
-                                        height / 2 + 65);
-                    }
+                    TextMarquee &mq = displayTitle ? title_marquee_ : artist_marquee_;
+                    mq.setViewport(width - 40);
+                    mq.setText(displayTitle ? this->media_title : this->media_artist);
+                    bool changed = mq.update(gfx, esphome::millis());
+                    mq.draw(gfx, width / 2, height / 2 + 65, MAROON);
 
 
-                    // Device Name
+                    // Device Name (no marquee needed typically)
                     display.setFontsize(1);
                     gfx->drawString(this->device.getName().c_str(),
                                     width / 2,
@@ -133,9 +133,10 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     this->showPlayMenu(display);
-                    ESP_LOGD("DISPLAY", "Play-Modus");
+                    ESP_LOGD("DISPLAY", "Play mode");
 
-                    this->displayRefreshNeeded = false;
+                    // Keep refreshing if marquee active
+                    this->displayRefreshNeeded = (title_marquee_.isActive() || artist_marquee_.isActive());
                 }
 
                 void registerHAListener() override {

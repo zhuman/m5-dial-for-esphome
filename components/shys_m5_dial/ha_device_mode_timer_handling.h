@@ -212,7 +212,7 @@ namespace esphome
 
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Timer-Modus");
+                    ESP_LOGD("DISPLAY", "refresh display: timer mode");
                     LovyanGFX* gfx = display.getGfx();
                     uint16_t height = gfx->height();
                     uint16_t width  = gfx->width();

@@ -50,7 +50,7 @@ namespace esphome
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
                     this->showOnOffMenu(display);
-                    ESP_LOGD("DISPLAY", "An/Aus-Modus");
+                    ESP_LOGD("DISPLAY", "On/Off mode");
                 }
 
                 void registerHAListener() override {

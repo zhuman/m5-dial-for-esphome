@@ -137,7 +137,7 @@ namespace esphome
                     result = getNextToRotaryStepwidth(result);
 
                     this->setValue(result); 
-                    ESP_LOGD("TOUCH", "Aktuellen Wert auf %i gesetzt", result);
+                    ESP_LOGD("TOUCH", "Set current value to %i", result);
                     
                     return true;                    
                 }
@@ -153,7 +153,7 @@ namespace esphome
                     result = getNextToRotaryStepwidth(result);
 
                     this->setValue(result); 
-                    ESP_LOGD("TOUCH", "Aktuellen Wert auf %i gesetzt", result);
+                    ESP_LOGD("TOUCH", "Set current value to %i", result);
                     
                     return true;                    
                 }
@@ -224,13 +224,17 @@ namespace esphome
                 }
 
                 void setValue(int val){
+                    if (val == this->value) return;
                     this->value = val;
                     this->lastValueUpdate = esphome::millis();
                     this->currentValueModified = true;
+                    this->displayRefreshNeeded = true;
                 }
 
                 void setReceivedValue(int val){
+                    if (val == this->value) return;
                     this->value = val;
+                    this->displayRefreshNeeded = true;
                 }
 
                 int getMinValue(){

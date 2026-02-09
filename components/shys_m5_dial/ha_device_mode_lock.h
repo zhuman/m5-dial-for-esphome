@@ -118,7 +118,7 @@ namespace esphome
 
 
                 void refreshDisplay(M5DialDisplay& display, bool init) override {
-                    ESP_LOGD("DISPLAY", "refresh Display: Lock-Modus");
+                    ESP_LOGD("DISPLAY", "refresh display: lock mode");
                     this->showLockStatus(display);
                     
                     this->displayRefreshNeeded = false;
