@@ -56,7 +56,7 @@ class TextMarquee {
     if (!gfx) return;
     gfx->setTextColor(color);
     gfx->setTextDatum(textdatum_t::middle_center);
-    gfx->drawString(text_.c_str(), cx - offset_, y);
+    gfx->drawString(text_.c_str(), cx - offset_ + max_offset_ / 2, y);
   }
 
   bool isActive() const { return max_offset_ > 0; }
@@ -68,7 +68,7 @@ class TextMarquee {
   int16_t max_offset_ = 0;
   int16_t offset_ = 0;
   int16_t last_offset_ = -1;
-  uint32_t duration_ms_ = 1000; // full left->right cycle is 2x
+  uint32_t duration_ms_ = 2000; // full left->right cycle is 2x
   uint32_t start_ms_ = 0;
 };
 

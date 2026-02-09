@@ -98,7 +98,7 @@ namespace esphome
 
                     // Device Name (marquee)
                     display.setFontsize(1);
-                    device_name_marquee_.setViewport(width - 40);
+                    device_name_marquee_.setViewport(width / 2);
                     device_name_marquee_.setText(this->device.getName());
                     bool changed = device_name_marquee_.update(gfx, esphome::millis());
                     device_name_marquee_.draw(gfx, width / 2, height / 2 + 90, textColor);

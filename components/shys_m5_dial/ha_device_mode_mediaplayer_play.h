@@ -89,16 +89,16 @@ namespace esphome
                         gfx->fillRect(width/2+5, height/2-20, 15, 40, RED);
                     } else {
                         // Play Button
-                        M5Dial.Display.fillTriangle(width/2-13, height/2-20, width/2-13, height/2+20, width/2+23, height/2, RED);
+                        gfx->fillTriangle(width/2-13, height/2-20, width/2-13, height/2+20, width/2+23, height/2, RED);
                     }
 
                     // FWD
-                    M5Dial.Display.fillTriangle(width/2+50, height/2-20, width/2+50, height/2+20, width/2+75, height/2, RED);
-                    M5Dial.Display.fillTriangle(width/2+65, height/2-20, width/2+65, height/2+20, width/2+95, height/2, RED);
+                    gfx->fillTriangle(width/2+50, height/2-20, width/2+50, height/2+20, width/2+75, height/2, RED);
+                    gfx->fillTriangle(width/2+65, height/2-20, width/2+65, height/2+20, width/2+95, height/2, RED);
 
                     // PREV
-                    M5Dial.Display.fillTriangle(width/2-50, height/2-20, width/2-50, height/2+20, width/2-75, height/2, RED);
-                    M5Dial.Display.fillTriangle(width/2-65, height/2-20, width/2-65, height/2+20, width/2-95, height/2, RED);
+                    gfx->fillTriangle(width/2-50, height/2-20, width/2-50, height/2+20, width/2-75, height/2, RED);
+                    gfx->fillTriangle(width/2-65, height/2-20, width/2-65, height/2+20, width/2-95, height/2, RED);
 
 
 
@@ -111,7 +111,7 @@ namespace esphome
                     display.setFontsize(.7);
                     bool displayTitle = ((millis() / 5000) % 2 == 1);
                     TextMarquee &mq = displayTitle ? title_marquee_ : artist_marquee_;
-                    mq.setViewport(width - 40);
+                    mq.setViewport(width / 2);
                     mq.setText(displayTitle ? this->media_title : this->media_artist);
                     bool changed = mq.update(gfx, esphome::millis());
                     mq.draw(gfx, width / 2, height / 2 + 65, MAROON);

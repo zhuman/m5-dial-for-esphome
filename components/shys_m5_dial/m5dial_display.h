@@ -49,6 +49,9 @@ namespace esphome
                 enum class Target { DEVICE, PREV, NEXT } target_ = Target::DEVICE;
 
                 int timeToScreenOff = 30000;
+                int timeToDimScreen = 20000;
+                int dimmedBrightness = 2;
+                int normalBrightness = 100;
                 unsigned long lastEvent = 0;
                 uint16_t lastMode = -1;
 
@@ -68,6 +71,8 @@ namespace esphome
 
                 void init(){
                     M5Dial.Display.setRotation(displayRotation);
+                    
+                    ensureSprites();
                 }
 
                 void on_display_refresh(std::function<void(bool)> callback){
@@ -253,7 +258,9 @@ namespace esphome
                 }
 
                 void validateTimeout(){
-                    if (esphome::millis() - lastEvent > timeToScreenOff ) {
+                    int msSinceLastEvent = esphome::millis() - lastEvent;
+
+                    if (msSinceLastEvent > timeToScreenOff ) {
                         if(this->isScreensaverActive()){
                             bool forceRefresh = !screensaverRunning;
                             screensaver->show(*this, forceRefresh);
@@ -271,9 +278,11 @@ namespace esphome
                             this->display_refresh_action(true);
                         }
 
-                        if ( M5Dial.Display.getBrightness()<=0 ) {
-                            M5Dial.Display.setBrightness(100);
-                            ESP_LOGI("DISPLAY", "Display on");
+                        int brightness = timeToDimScreen < timeToDimScreen ? normalBrightness :
+                            ((msSinceLastEvent - timeToDimScreen) * (dimmedBrightness - normalBrightness) / (timeToScreenOff - timeToDimScreen) + normalBrightness);
+
+                        if ( M5Dial.Display.getBrightness() != brightness ) {
+                            M5Dial.Display.setBrightness(brightness);
                         }
                     }
                 }
@@ -290,7 +299,7 @@ namespace esphome
 
                     gfx->startWrite();                      // Secure SPI bus
                     this->clear(DARKGREY);
-                    
+
                     this->setFontsize(2);
                     gfx->drawString("OFFLINE",
                                     width / 2,
